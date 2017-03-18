@@ -7,6 +7,8 @@ app.get('/crawl/:href(*)', function (req, res) {
     phoneNumbers = [];
     horizon = [];
     visited = [];
+
+    //choosing how to structure request
     if (!startUrl.includes("http")){
         if (startUrl.includes("localhost")){
             horizon.push(startUrl);   
