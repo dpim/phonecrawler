@@ -50,13 +50,13 @@ function explore(horizon, visited, phoneNums, request, response) {
                     phoneNums.push(phoneMatches);
                     visited.push(currentUrl)
                 } 
-                explore(horizon, visited, phoneNums, request, res);
+                explore(horizon, visited, phoneNums, request, response);
             });
         } else {
-            explore(horizon, visited, phoneNums, request, res);
+            explore(horizon, visited, phoneNums, request, response);
         }
     } else {
-        res.write(phoneNums)
+        response.write(phoneNums)
     }
 }
 
