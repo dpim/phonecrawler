@@ -1,20 +1,31 @@
-var express = require('express')
+var express = require('express');
 var request = require('request');
-var app = express()
-
+var app = express();
 
 app.get('/crawl/:href(*)', function (req, res) {
     startUrl = req.params.href;
     phoneNumbers = [];
     horizon = [];
-    visited = []
-    console.log("parms", startUrl);
-    horizon.push(format(startUrl))
+    visited = [];
+    if (!startUrl.includes("http")){
+        if (startUrl.includes("localhost")){
+            horizon.push(startUrl);   
+        }
+        horizon.push(format(startUrl));
+    } else {
+        horizon.push(startUrl);
+    }
+    res.header("Access-Control-Allow-Origin", "*");
     explore(horizon, visited, phoneNumbers, request, res);
+})
+
+app.get('/crawltest/:href(*)', function (req, res) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send("['123-456-789']");
 })
    
 app.listen(8080, function () {
-    console.log('Example app listening on port 8080!')
+    console.log('Example app listening on port 8080!');
 })
 
 function format(url) {
@@ -48,10 +59,10 @@ function explore(horizon, visited, phoneNums, request, crawlResponse) {
                             }
                         }
                     }
-                    console.log("hrozion", horizon);
+                    //matching phone numbers
                     phoneMatches = body.match(/\(?\d{3}\)?-{1}\d{3}-{1}\d{4}/g)
-                    phoneNums.push(phoneMatches);
-                    visited.push(currentUrl)
+                    phoneNums.concat(phoneMatches);
+                    visited.push(currentUrl);
                 } 
                 explore(horizon, visited, phoneNums, request, crawlResponse);
             });
@@ -59,8 +70,8 @@ function explore(horizon, visited, phoneNums, request, crawlResponse) {
             explore(horizon, visited, phoneNums, request, crawlResponse);
         }
     } else {
-        console.log("$$ is res null: ", crawlResponse == null);
-        crawlResponse.send(phoneNums)
+        console.log("is res null: ", crawlResponse == null);
+        crawlResponse.send(phoneNums);
     }
 }
 
