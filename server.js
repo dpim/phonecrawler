@@ -21,9 +21,10 @@ function format(url) {
     return "https://" + url;
 }
 
-function explore(horizon, visited, phoneNums, request, response) {
+function explore(horizon, visited, phoneNums, request, crawlResponse) {
     if (horizon.length > 0){
         currentUrl = horizon.pop();
+        //console.log("is res null: ", response == null);
         console.log("current url: ", currentUrl);
         if (!visited.includes(currentUrl)) {
             //issue request
@@ -34,15 +35,17 @@ function explore(horizon, visited, phoneNums, request, response) {
                     //parse for urls
                     urlMatches = body.match(/\w+\.(com|org|net)\/*\w*(\"|\'){1}/g)//body.match(/\w+\.\w{3,}\"/g);
                     urlMatchesCleaned = [];
-                    for (let i = 0; i < urlMatches.length; i++) {
-                        let curr = urlMatches[i];
-                        urlMatchesCleaned.push(curr.substring(0, curr.length - 1)); //remove last char
-                    }
-                    //console.log(urlMatchesCleaned);
-                    for (let i = 0; i < urlMatchesCleaned.length; i++) {
-                        let matchCleaned = format(urlMatchesCleaned[i]);
-                        if (!horizon.includes(matchCleaned)){
-                            horizon.push(matchCleaned);
+                    if (urlMatches){
+                        for (let i = 0; i < urlMatches.length; i++) {
+                            let curr = urlMatches[i];
+                            urlMatchesCleaned.push(curr.substring(0, curr.length - 1)); //remove last char
+                        }
+                        //console.log(urlMatchesCleaned);
+                        for (let i = 0; i < urlMatchesCleaned.length; i++) {
+                            let matchCleaned = format(urlMatchesCleaned[i]);
+                            if (!horizon.includes(matchCleaned)){
+                                horizon.push(matchCleaned);
+                            }
                         }
                     }
                     console.log("hrozion", horizon);
@@ -50,13 +53,14 @@ function explore(horizon, visited, phoneNums, request, response) {
                     phoneNums.push(phoneMatches);
                     visited.push(currentUrl)
                 } 
-                explore(horizon, visited, phoneNums, request, response);
+                explore(horizon, visited, phoneNums, request, crawlResponse);
             });
         } else {
-            explore(horizon, visited, phoneNums, request, response);
+            explore(horizon, visited, phoneNums, request, crawlResponse);
         }
     } else {
-        response.write(phoneNums)
+        console.log("$$ is res null: ", crawlResponse == null);
+        crawlResponse.send(phoneNums)
     }
 }
 
