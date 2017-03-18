@@ -9,12 +9,10 @@ app.get('/crawl/:href(*)', function (req, res) {
     horizon = [];
     visited = []
     console.log("parms", startUrl);
-    horizon.push(format(startUrl)); //testing
+    horizon.push(format(startUrl))
+    explore(horizon, visited, phoneNumbers, request);
 
-
-
-
-
+   /* horizon.push(format(startUrl)); //testing
 
     while (horizon.length > 0) {
         currentUrl = horizon.pop();
@@ -45,7 +43,7 @@ app.get('/crawl/:href(*)', function (req, res) {
                 visited.push(currentUrl)
             });
         }
-    }
+    } */
 })
 
 app.listen(8080, function () {
@@ -55,3 +53,46 @@ app.listen(8080, function () {
 function format(url) {
     return "https://" + url;
 }
+
+
+function explore(horizon, visited, phoneNums, request) {
+    if (horizon.length > 0){
+        currentUrl = horizon.pop();
+        console.log("current url: ", currentUrl);
+        if (!visited.includes(currentUrl)) {
+            //issue request
+            request(currentUrl, function (error, response, body) {
+                //parse for phone numbers and urls 
+                console.log("error:",error);
+                if (!error && response && response.statusCode == 200) {
+                    //parse for urls
+                    urlMatches = body.match(/\w+\.(com|org|net)\/*\w*(\"|\'){1}/g)//body.match(/\w+\.\w{3,}\"/g);
+                    urlMatchesCleaned = [];
+                    for (let i = 0; i < urlMatches.length; i++) {
+                        let curr = urlMatches[i];
+                        urlMatchesCleaned.push(curr.substring(0, curr.length - 1)); //remove last char
+                    }
+                    //console.log(urlMatchesCleaned);
+                    for (let i = 0; i < urlMatchesCleaned.length; i++) {
+                        let matchCleaned = format(urlMatchesCleaned[i]);
+                        if (!horizon.includes(matchCleaned)){
+                            horizon.push(matchCleaned);
+                        }
+                    }
+                    console.log("hrozion", horizon);
+                    phoneMatches = body.match(/\(?\d{3}\)?-{1}\d{3}-{1}\d{4}/g)
+                    phoneNums.push(phoneMatches);
+                    visited.push(currentUrl)
+                } 
+                explore(horizon, visited, phoneNums, request);
+            });
+        } else {
+            explore(horizon, visited, phoneNums, request);
+        }
+    } else {
+        console.log("all done");
+        return phoneNums;
+    }
+}
+
+
