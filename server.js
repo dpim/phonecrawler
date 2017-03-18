@@ -20,8 +20,9 @@ app.get('/crawl/:href(*)', function (req, res) {
 })
 
 app.get('/crawltest/:href(*)', function (req, res) {
+    let fakePhoneArr = ['123-456-7891'];
     res.header("Access-Control-Allow-Origin", "*");
-    res.send("['123-456-789']");
+    res.send(fakePhoneArr);
 })
    
 app.listen(8080, function () {
@@ -37,6 +38,8 @@ function explore(horizon, visited, phoneNums, request, crawlResponse) {
         currentUrl = horizon.pop();
         //console.log("is res null: ", response == null);
         console.log("current url: ", currentUrl);
+        console.log("current phones: ", phoneNums);
+        console.log("current horizon: ", horizon);
         if (!visited.includes(currentUrl)) {
             //issue request
             request(currentUrl, function (error, response, body) {
@@ -61,7 +64,14 @@ function explore(horizon, visited, phoneNums, request, crawlResponse) {
                     }
                     //matching phone numbers
                     phoneMatches = body.match(/\(?\d{3}\)?-{1}\d{3}-{1}\d{4}/g)
-                    phoneNums.concat(phoneMatches);
+                    if (phoneMatches){
+                        for (let i = 0; i < phoneMatches.length; i++) {
+                            let curr = phoneMatches[i];
+                            if (curr && !phoneNums.includes(curr)){
+                                phoneNums.push(curr);
+                            }
+                        }
+                    }
                     visited.push(currentUrl);
                 } 
                 explore(horizon, visited, phoneNums, request, crawlResponse);
