@@ -3,39 +3,55 @@ var request = require('request');
 var app = express()
 
 
-app.get('/crawl/:urlPassed', function (req, res) {
-    startUrl = req.params("urlPassed");
+app.get('/crawl/:href(*)', function (req, res) {
+    startUrl = req.params.href;
     phoneNumbers = [];
     horizon = [];
-    console.log(startUrl);
-    horizon.push("https://www.google.com"); //testing
+    visited = []
+    console.log("parms", startUrl);
+    horizon.push(format(startUrl)); //testing
 
-    while (horizon.length > 0){
+
+
+
+
+
+    while (horizon.length > 0) {
         currentUrl = horizon.pop();
-        //issue request
-        request(currentUrl, function (error, response, body) {
-            //parse for phone numbers and urls 
-            //console.log(error);
-            //console.log(response);
-            if (!error && response && response.statusCode == 200){
-                //console.log(aParts.length);
+        console.log("current url: ", currentUrl)
+        if (!visited.includes(currentUrl)) {
+            //issue request
+            request(currentUrl, function (error, response, body) {
+                //parse for phone numbers and urls 
+                //console.log(error);
+                //console.log(response);
+                if (!error && response && response.statusCode == 200) {
+                    //parse for urls
+                    urlMatches = body.match(/\w+\.(com|org|net)\/*\w*(\"|\'){1}/g)//body.match(/\w+\.\w{3,}\"/g);
+                    urlMatchesCleaned = [];
+                    for (let i = 0; i < urlMatches.length; i++) {
+                        let curr = urlMatches[i];
+                        urlMatchesCleaned.push(curr.substring(0, curr.length - 1)); //remove last char
+                    }
+                    console.log(urlMatchesCleaned);
+                    for (let i = 0; i < urlMatchesCleaned.length; i++) {
+                        horizon.push(format(urlMatchesCleaned));
+                    }
+                    console.log(horizon);
+                    //parse for phone numbers                
+                    phoneMatches = body.match(/\(?\d{3}\)?-{1}\d{3}-{1}\d{4}/g)
 
-                //parse for urls
-                urlMatches = body.match(/\w+\.(com|org|net)\/*\w*(\"|\'){1}/g)//body.match(/\w+\.\w{3,}\"/g);
-                urlMatchesCleaned = [];
-                for (let i = 0; i < urlMatches.length; i++){
-                    let curr = urlMatches[i];
-                    urlMatchesCleaned.push(curr.substring(0, curr.length-1)); //remove last char
                 }
-                console.log(urlMatchesCleaned);
-                //parse for phone numbers                
-
-
-            }
-        });
+                visited.push(currentUrl)
+            });
+        }
     }
 })
 
 app.listen(8080, function () {
-  console.log('Example app listening on port 8080!')
+    console.log('Example app listening on port 8080!')
 })
+
+function format(url) {
+    return "https://" + url;
+}
