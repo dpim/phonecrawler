@@ -1,0 +1,31 @@
+{
+  "name": "phonecrawler",
+  "version": "0.0.1",
+  "description": "utility for scraping phone numbers",
+  "main": "server.js",
+  "bin": {
+    "phonecrawl": "./server.js"
+  },
+  "dependencies": {
+    "co": "^4.6.0",
+    "co-prompt": "^1.0.0",
+    "commander": "^2.9.0",
+    "express": "^4.15.2",
+    "request": "^2.81.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dpim/crawly-service.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dpim/crawly-service/issues"
+  },
+  "homepage": "https://github.com/dpim/crawly-service#readme"
+}

@@ -1,90 +1,144 @@
+#!/usr/bin/env node
+var program = require('commander');
+var co = require('co');
+var coprompt = require('co-prompt');
 var express = require('express');
 var request = require('request');
 var app = express();
+var fs = require('fs');
 
-app.get('/crawl/:href(*)', function (req, res) {
-    startUrl = req.params.href;
+program
+    .arguments('<url>')
+    .option('-v, --verbose', 'verbose mode')
+    .action(function (url) {
+        co(function* () {
+            var stayOnDomain = yield coprompt('> Would you like to crawl only on the same domain? (y/n):  ');
+            var limit = yield coprompt('> Set limit for search? (y/n) :  ');
+            var isLimited = (limit.toLowerCase() == 'yes' || limit.toLowerCase() == 'y') ? true : false;
+            var countDoms = (isLimited) ? yield coprompt('> Maximum count of URLs processed:  ') : 1000000;
+            var sameDomain = (stayOnDomain.toLowerCase() == 'yes' || stayOnDomain.toLowerCase() == 'y') ? true : false;
+            crawl(url, program.verbose, sameDomain, countDoms);
+        });
+    }).parse(process.argv);
+
+function crawl(url, verbose, sameDomain, countDoms) {
+    startUrl = url;
     phoneNumbers = [];
     horizon = [];
     visited = [];
-
     //choosing how to structure request
-    if (!startUrl.includes("http")){
-        if (startUrl.includes("localhost")){
-            horizon.push(startUrl);   
-        }
+    if (!startUrl.includes('http')) {
         horizon.push(format(startUrl));
     } else {
         horizon.push(startUrl);
     }
-    res.header("Access-Control-Allow-Origin", "*");
-    explore(horizon, visited, phoneNumbers, request, res);
-})
-
-app.get('/crawltest/:href(*)', function (req, res) {
-    let fakePhoneArr = ['123-456-7891'];
-    res.header("Access-Control-Allow-Origin", "*");
-    res.send(fakePhoneArr);
-})
-   
-app.listen(8080, function () {
-    console.log('Example app listening on port 8080!');
-})
-
-function format(url) {
-    return "https://" + url;
+    explore(verbose, horizon, visited, phoneNumbers, sameDomain, countDoms);
 }
 
-function explore(horizon, visited, phoneNums, request, crawlResponse) {
-    if (horizon.length > 0){
-        currentUrl = horizon.pop();
-        //console.log("is res null: ", response == null);
-        console.log("current url: ", currentUrl);
-        console.log("current phones: ", phoneNums);
-        console.log("current horizon: ", horizon);
+function explore(verbose, horizon, visited, phoneNums, sameDomain, count) {
+    if (horizon.length > 0 && count > 0) {
+        currentUrl = horizon.shift();
+        if (verbose) {
+            console.log('Current url: ', currentUrl);
+            console.log('Current phones: ', phoneNums);
+            console.log('Current horizon: ', horizon);
+        } else {
+            printProgress(currentUrl, horizon.length, Object.keys(phoneNums).length);
+        }
         if (!visited.includes(currentUrl)) {
             //issue request
             request(currentUrl, function (error, response, body) {
                 //parse for phone numbers and urls 
-                console.log("error:",error);
+                if (verbose) {
+                    console.log('error:', error);
+                }
                 if (!error && response && response.statusCode == 200) {
                     //parse for urls
-                    urlMatches = body.match(/\w+\.(com|org|net)\/*\w*(\"|\'){1}/g)//body.match(/\w+\.\w{3,}\"/g);
+                    urlMatches = body.match(/\w+\.(com|org|net|gov)\/*\w*(\"|\'){1}/g);
                     urlMatchesCleaned = [];
-                    if (urlMatches){
+                    if (urlMatches) {
                         for (let i = 0; i < urlMatches.length; i++) {
                             let curr = urlMatches[i];
-                            urlMatchesCleaned.push(curr.substring(0, curr.length - 1)); //remove last char
+                            urlMatchesCleaned.push(curr.substring(0, curr.length - 1));
                         }
-                        //console.log(urlMatchesCleaned);
                         for (let i = 0; i < urlMatchesCleaned.length; i++) {
                             let matchCleaned = format(urlMatchesCleaned[i]);
-                            if (!horizon.includes(matchCleaned)){
-                                horizon.push(matchCleaned);
+                            if (!horizon.includes(matchCleaned) && !matchCleaned.includes("schema.org")) {
+                                if (!sameDomain) {
+                                    horizon.push(matchCleaned);
+                                } else if (sameDomain && matchDomain(currentUrl, matchCleaned)) {
+                                    horizon.push(matchCleaned);
+                                }
                             }
                         }
                     }
                     //matching phone numbers
                     phoneMatches = body.match(/\(?\d{3}\)?-{1}\d{3}-{1}\d{4}/g)
-                    if (phoneMatches){
+                    if (phoneMatches) {
                         for (let i = 0; i < phoneMatches.length; i++) {
                             let curr = phoneMatches[i];
-                            if (curr && !phoneNums.includes(curr)){
-                                phoneNums.push(curr);
+                            if (curr && !phoneNums.includes(curr)) {
+                                phoneNums[curr] = currentUrl;
                             }
                         }
                     }
                     visited.push(currentUrl);
-                } 
-                explore(horizon, visited, phoneNums, request, crawlResponse);
+                }
+                explore(verbose, horizon, visited, phoneNums, sameDomain, count - 1);
             });
         } else {
-            explore(horizon, visited, phoneNums, request, crawlResponse);
+            explore(verbose, horizon, visited, phoneNums, sameDomain, count - 1);
         }
     } else {
-        console.log("is res null: ", crawlResponse == null);
-        crawlResponse.send(phoneNums);
+        console.log('\n');
+        console.log(phoneNums);
+        writeToFile(phoneNums);
     }
 }
 
+function writeToFile(phoneNumbers) {
+    var stringified = stringify(phoneNumbers);
+    fs.writeFile('results.txt', stringified, function (err) {
+        if (err) {
+            console.log("An error occurred saving the results to file")
+        } else {
+            console.log("Saved to file");
+        }
+    });
+}
+
+function stringify(phoneNumbers) {
+    var str = '{';
+    var count = Object.keys(phoneNumbers).length;
+    var i = 0;
+    for (phoneNumber in phoneNumbers) {
+        if (i < count - 1) {
+            str += '\n \"' + phoneNumber + '\" : \"' + phoneNumbers[phoneNumber] + '\",'
+        } else {
+            str += '\n \"' + phoneNumber + '\" : \"' + phoneNumbers[phoneNumber] + '\"'
+        }
+        i++;
+    }
+    return str + '\n}';
+}
+
+function format(url) {
+    return "https://" + url;
+}
+
+function printProgress(url, toProcess, numsFound) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    var progress = 'Current url: ' + url + ', count to process: ' + toProcess + ', numbers found: ' + numsFound;
+    process.stdout.write(progress);
+}
+
+
+function matchDomain(firstDomain, secondDomain) {
+    var firstDomainParts = firstDomain.split(/\.(com|org|net|gov)/);
+    var secondDomainParts = secondDomain.split(/\.(com|org|net|gov)/);
+    console.log(firstDomainParts)
+    console.log(secondDomainParts)
+    return firstDomainParts[0] == secondDomainParts[0];
+}
 
