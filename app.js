@@ -4,7 +4,6 @@ var co = require('co');
 var coprompt = require('co-prompt');
 var express = require('express');
 var request = require('request');
-var app = express();
 var fs = require('fs');
 
 program
