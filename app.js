@@ -2,7 +2,6 @@
 var program = require('commander');
 var co = require('co');
 var coprompt = require('co-prompt');
-var express = require('express');
 var request = require('request');
 var fs = require('fs');
 
