@@ -1,6 +1,6 @@
 # Phonecrawler
 
-![Screenshot](http://i.imgur.com/o692f3C.png)
+![Screenshot](http://i.imgur.com/Sc6lwaq.png)
 ## About
 A simple web crawler that scrapes phone numbers and what sites they originated from.
 
