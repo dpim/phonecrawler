@@ -137,8 +137,6 @@ function printProgress(url, toProcess, numsFound) {
 function matchDomain(firstDomain, secondDomain) {
     var firstDomainParts = firstDomain.split(/\.(com|org|net|gov)/);
     var secondDomainParts = secondDomain.split(/\.(com|org|net|gov)/);
-    console.log(firstDomainParts)
-    console.log(secondDomainParts)
     return firstDomainParts[0] == secondDomainParts[0];
 }
 
