@@ -1,8 +1,8 @@
 # Phonecrawler
 
-![Screenshot](http://i.imgur.com/Sc6lwaq.png)
 ## About
-A simple web crawler that scrapes phone numbers and what sites they originated from.
+A simple, configurable web crawler that scrapes phone numbers from sites
+![Screenshot](http://i.imgur.com/Sc6lwaq.png)
 
 ## Installation
 * Clone repo
